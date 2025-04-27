@@ -1,7 +1,6 @@
 import { MongoClient, ServerApiVersion } from "mongodb";
 import 'dotenv/config'
 const uri = process.env.ATLAS_URI || "";
-console.log("uri:", uri);
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -22,6 +21,6 @@ try {
   console.error(err);
 }
 
-let db = client.db("employees");
+let db = client.db("Spotify-db");
 
 export default db;
