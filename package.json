@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Storing data and breaking down images for their colour palettes!",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node server/server.js",
     "dev": "nodemon server/server.js",
