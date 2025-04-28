@@ -7,6 +7,7 @@ const client = new MongoClient(uri, {
     strict: true,
     deprecationErrors: true,
   },
+  autoSelectFamily: false, // Prevent TLS issues on Fly.io
 });
 
 // Define schema validation for Spotify collection
