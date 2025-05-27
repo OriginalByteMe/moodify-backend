@@ -20,7 +20,6 @@ app.use(express.json());
 //   console.log(`=====================================================\n\n`);
 //   next();
 // });
-app.use("/record", records);
 app.use("/spotify", spotify);
 
 // start the Express server
