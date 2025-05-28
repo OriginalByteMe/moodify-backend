@@ -26,37 +26,72 @@ checkConnection();
 
 export default db;
 
-export const spotifyCollection = {
+export const recordsCollection = {
   findOne: async (query) => {
-    return db('spotify').where(query).first();
+    return db('records').where(query).first();
   },
   
   find: async (query) => {
-    return db('spotify').where(query);
+    return db('records').where(query);
   },
   
   insertOne: async (document) => {
-    return db('spotify').insert(document).returning('*');
+    return db('records').insert(document).returning('*');
   },
   
   insertMany: async (documents) => {
-    return db('spotify').insert(documents).returning('*');
+    return db('records').insert(documents).returning('*');
   },
   
   updateOne: async (query, update) => {
-    return db('spotify').where(query).update(update).returning('*');
+    return db('records').where(query).update(update).returning('*');
   },
   
   upsert: async (query, document) => {
-    const exists = await db('spotify').where(query).first();
+    const exists = await db('records').where(query).first();
     if (exists) {
-      return db('spotify').where(query).update(document).returning('*');
+      return db('records').where(query).update(document).returning('*');
     } else {
-      return db('spotify').insert(document).returning('*');
+      return db('records').insert(document).returning('*');
     }
   },
   
   deleteOne: async (query) => {
-    return db('spotify').where(query).del();
+    return db('records').where(query).del();
+  }
+};
+
+export const albumCollection = {
+  findOne: async (query) => {
+    return db('albums').where(query).first();
+  },
+  
+  find: async (query) => {
+    return db('albums').where(query);
+  },
+  
+  insertOne: async (document) => {
+    return db('albums').insert(document).returning('*');
+  },
+  
+  insertMany: async (documents) => {
+    return db('albums').insert(documents).returning('*');
+  },
+  
+  updateOne: async (query, update) => {
+    return db('albums').where(query).update(update).returning('*');
+  },
+  
+  upsert: async (query, document) => {
+    const exists = await db('albums').where(query).first();
+    if (exists) {
+      return db('albums').where(query).update(document).returning('*');
+    } else {
+      return db('albums').insert(document).returning('*');
+    }
+  },
+  
+  deleteOne: async (query) => {
+    return db('albums').where(query).del();
   }
 };
