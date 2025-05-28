@@ -1,0 +1,44 @@
+services:
+  server:
+    build:
+      context: .
+      args:
+        - NODE_ENV=development
+    ports:
+      - "5050:5050"
+    environment:
+      - PORT=5050
+      - NODE_ENV=development
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=moodify
+      - POSTGRES_PASSWORD=moodify
+      - POSTGRES_DB=moodify_db
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+    command: npm run dev
+    volumes:
+      - .:/app
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: moodify
+      POSTGRES_PASSWORD: moodify
+      POSTGRES_DB: moodify_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
