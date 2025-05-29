@@ -4,7 +4,7 @@ import { createPalette } from "../controllers/paletteController.js";
 const router = express.Router();
 
 // Route only handles routing - logic is in the controller
-router.post("/record", createPalette);
+router.post("/track", createPalette);
 
 // You could add more routes for palette operations
 // router.get("/popular", getPaletteController.getPopularPalettes);

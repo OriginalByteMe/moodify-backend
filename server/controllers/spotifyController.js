@@ -55,6 +55,25 @@ export const spotifyController = {
     }
   },
 
+  async getTracksByAlbumId(req, res) {
+    try {
+      const { albumId } = req.params;
+      
+      if (!albumId) {
+        return res.status(400).json({ error: "Album ID is required." });
+      }
+      
+      const results = await spotifyService.getTracksByAlbumId(albumId);
+      return res.status(200).json(results);
+    } catch (err) {
+      console.error("Error retrieving Spotify tracks:", err);
+      return res.status(500).json({ 
+        error: "Error getting spotify data",
+        message: err.message
+      });
+    }
+  },
+
   /**
    * Create a new track
    * @param {Request} req - Express request object
@@ -120,7 +139,7 @@ export const spotifyController = {
       if (err.code === '23505') {
         return res.status(200).json({
           success: true,
-          message: "Partial success - some records were inserted, others already existed",
+          message: "Partial success - some tracks were inserted, others already existed",
           inserted: { count: 0 },
           skipped: { count: 'unknown', ids: ['unknown'] }
         });

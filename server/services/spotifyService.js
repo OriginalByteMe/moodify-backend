@@ -1,4 +1,4 @@
-import db, { spotifyCollection } from "../db/connection.js";
+import db, { tracksCollection, albumCollection } from "../db/connection.js";
 
 /**
  * Service layer for Spotify track operations
@@ -11,7 +11,7 @@ export const spotifyService = {
    * @returns {Promise<Object>} - The track object or null if not found
    */
   async getTrackById(spotifyId) {
-    return spotifyCollection.findOne({ spotifyId });
+    return tracksCollection.findOne({ spotifyId });
   },
 
   /**
@@ -24,7 +24,28 @@ export const spotifyService = {
       throw new Error("Invalid or empty spotifyIds array");
     }
     
-    return spotifyCollection.find({ spotifyId: { in: spotifyIds } });
+    return tracksCollection.find({ spotifyId: { in: spotifyIds } });
+  },
+
+  /**
+   * Get multiple tracks by their Spotify album ID
+   * @param {string} albumId - The Spotify album ID
+   * @returns {Promise<Object[]>} - Array of track objects
+   */
+  async getTracksByAlbumId(albumId) {
+    if (!albumId) {
+      throw new Error("Invalid or empty albumId");
+    }
+    
+    // First find the album by its Spotify ID
+    const album = await db('albums').where({ spotifyId: albumId }).first();
+    
+    if (!album) {
+      return [];
+    }
+    
+    // Then find all tracks with the album's primary key
+    return tracksCollection.find({ album_id: album.id });
   },
 
   /**
@@ -34,18 +55,32 @@ export const spotifyService = {
    */
   async createTrack(trackData) {
     // Validate required fields
-    if (!trackData.spotifyId || !trackData.title || !trackData.artists) {
-      throw new Error("Missing required fields: spotifyId, title, and artists are required");
+    if (!trackData.spotifyId || !trackData.title || !trackData.artists || !trackData.spotifyAlbumId || !trackData.albumCover || !trackData.albumColourPalette) {
+      throw new Error("Missing required fields: spotifyId, title, artists, spotifyAlbumId, albumCover, and albumColourPalette are required");
     }
     
     // Check if record already exists
-    const existing = await spotifyCollection.findOne({ spotifyId: trackData.spotifyId });
+    const existing = await tracksCollection.findOne({ spotifyId: trackData.spotifyId });
     if (existing) {
       return {
         success: false,
         existing,
         message: "Record with this spotifyId already exists - no changes made"
       };
+    }
+
+    // Chekc if album already exists
+    const album = await albumCollection.findOne({ spotifyId: trackData.spotifyAlbumId });
+    if (!album) {
+      // Create new album with spotifyId
+      const newAlbum = {
+        spotifyId: trackData.spotifyAlbumId,
+        album: trackData.album,
+        albumCover: trackData.albumCover,
+        colourPalette: JSON.stringify(trackData.albumColourPalette),
+      };
+      const result = await albumCollection.insertOne(newAlbum);
+      trackData.album_id = result.insertedId;
     }
     
     // Format the track data
@@ -56,11 +91,12 @@ export const spotifyService = {
       album: trackData.album,
       albumCover: trackData.albumCover,
       songUrl: trackData.songUrl,
-      colourPalette: trackData.colourPalette,
+      colourPalette: JSON.stringify(trackData.colourPalette),
+      album_id: trackData.album_id,
     };
     
     // Insert the record
-    const result = await spotifyCollection.insertOne(newTrack);
+    const result = await tracksCollection.insertOne(newTrack);
     
     return {
       success: true,
@@ -70,7 +106,7 @@ export const spotifyService = {
   },
 
   /**
-   * Create multiple Spotify track records in bulk
+   * Create multiple Spotify track tracks in bulk
    * @param {Object[]} tracksData - Array of track data objects
    * @returns {Promise<Object>} - Result object with success and insertion stats
    */
@@ -104,21 +140,21 @@ export const spotifyService = {
     
     try {
       // Check which IDs already exist in the database
-      const existingRecords = await trx('spotify')
+      const existingtracks = await trx('tracks')
         .whereIn('spotifyId', spotifyIds);
       
       let newDocuments = [];
-      let skippedRecords = [];
+      let skippedtracks = [];
       
-      if (existingRecords.length > 0) {
-        // Some records already exist in database
-        const existingIds = existingRecords.map(record => record.spotifyId);
+      if (existingtracks.length > 0) {
+        // Some tracks already exist in database
+        const existingIds = existingtracks.map(record => record.spotifyId);
         
-        // Filter out existing records
+        // Filter out existing tracks
         newDocuments = tracksData.filter(item => !existingIds.includes(item.spotifyId));
-        skippedRecords = existingRecords;
+        skippedtracks = existingtracks;
       } else {
-        // No existing records found
+        // No existing tracks found
         newDocuments = tracksData;
       }
       
@@ -130,14 +166,14 @@ export const spotifyService = {
         album: data.album || "",
         albumCover: data.albumCover || "",
         songUrl: data.songUrl || "",
-        colourPalette: data.colourPalette || [],
+        colourPalette: JSON.stringify(data.colourPalette || []),
       }));
       
       let insertedIds = [];
       
       // Only attempt to insert if we have new documents
       if (formattedDocuments.length > 0) {
-        const results = await trx('spotify')
+        const results = await trx('tracks')
           .insert(formattedDocuments)
           .returning(['id', 'spotifyId']);
         
@@ -155,13 +191,13 @@ export const spotifyService = {
           ids: insertedIds
         },
         skipped: {
-          count: skippedRecords.length,
-          records: skippedRecords.map(r => ({ spotifyId: r.spotifyId, id: r.id }))
+          count: skippedtracks.length,
+          tracks: skippedtracks.map(r => ({ spotifyId: r.spotifyId, id: r.id }))
         },
         total: {
           processed: tracksData.length,
           inserted: insertedIds.length,
-          skipped: skippedRecords.length
+          skipped: skippedtracks.length
         }
       };
     } catch (error) {

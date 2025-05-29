@@ -26,38 +26,38 @@ checkConnection();
 
 export default db;
 
-export const recordsCollection = {
+export const tracksCollection = {
   findOne: async (query) => {
-    return db('records').where(query).first();
+    return db('tracks').where(query).first();
   },
   
   find: async (query) => {
-    return db('records').where(query);
+    return db('tracks').where(query);
   },
   
   insertOne: async (document) => {
-    return db('records').insert(document).returning('*');
+    return db('tracks').insert(document).returning('*');
   },
   
   insertMany: async (documents) => {
-    return db('records').insert(documents).returning('*');
+    return db('tracks').insert(documents).returning('*');
   },
   
   updateOne: async (query, update) => {
-    return db('records').where(query).update(update).returning('*');
+    return db('tracks').where(query).update(update).returning('*');
   },
   
   upsert: async (query, document) => {
-    const exists = await db('records').where(query).first();
+    const exists = await db('tracks').where(query).first();
     if (exists) {
-      return db('records').where(query).update(document).returning('*');
+      return db('tracks').where(query).update(document).returning('*');
     } else {
-      return db('records').insert(document).returning('*');
+      return db('tracks').insert(document).returning('*');
     }
   },
   
   deleteOne: async (query) => {
-    return db('records').where(query).del();
+    return db('tracks').where(query).del();
   }
 };
 

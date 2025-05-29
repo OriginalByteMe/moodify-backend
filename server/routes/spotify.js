@@ -5,15 +5,21 @@ const router = express.Router();
 
 
 // Retrieve multiple spotify songs via list of id's
-router.get("/bulk", spotifyController.getTracksByIds);
+router.get("/tracks/bulk", spotifyController.getTracksByIds);
 
 // Retrieve one spotify song by id
-router.get("/:id", spotifyController.getTrackById);
+router.get("/tracks/:id", spotifyController.getTrackById);
+
+// Retrieve multiple spotify songs via list of id's
+router.get("/albums/:id", spotifyController.getTracksByAlbumId);
 
 // Create a new spotify track
-router.post("/", spotifyController.createTrack);
+router.post("/tracks", spotifyController.createTrack);
 
 // Create multiple spotify tracks in bulk
-router.post("/bulk", spotifyController.createBulkTracks);
+router.post("/tracks/bulk", spotifyController.createBulkTracks);
+
+// Create a new spotify album
+router.post("/albums", spotifyController.createAlbum);
 
 export default router;
