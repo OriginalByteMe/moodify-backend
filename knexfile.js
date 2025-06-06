@@ -28,7 +28,7 @@ export default {
 
   staging: {
     client: 'postgresql',
-    connection: {
+    connection: process.env.DATABASE_URL || {
       host: process.env.POSTGRES_HOST,
       port: process.env.POSTGRES_PORT,
       database: process.env.POSTGRES_DB,
@@ -47,7 +47,7 @@ export default {
 
   production: {
     client: 'postgresql',
-    connection: {
+    connection: process.env.DATABASE_URL || {
       host: process.env.POSTGRES_HOST,
       port: process.env.POSTGRES_PORT,
       database: process.env.POSTGRES_DB,
