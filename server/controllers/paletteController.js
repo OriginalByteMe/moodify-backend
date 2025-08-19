@@ -34,6 +34,5 @@ export const createPalette = async (req, res) => {
 };
 
 export default {
-  createPalette,
-  generatePalette
+  createPalette
 };

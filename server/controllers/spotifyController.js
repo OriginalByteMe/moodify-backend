@@ -57,7 +57,7 @@ export const spotifyController = {
 
   async getTracksByAlbumId(req, res) {
     try {
-      const { albumId } = req.params;
+      const albumId = req.params.id;
       
       if (!albumId) {
         return res.status(400).json({ error: "Album ID is required." });
@@ -109,6 +109,47 @@ export const spotifyController = {
       console.error("Error creating Spotify track:", err);
       return res.status(500).json({
         error: "Error adding spotify data",
+        message: err.message
+      });
+    }
+  },
+
+  /**
+   * Create a new album
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   */
+  async createAlbum(req, res) {
+    try {
+      // Validate required fields
+      if (!req.body.spotifyId || !req.body.album || !req.body.artists) {
+        return res.status(400).json({
+          error: "Missing required fields: spotifyId, album, and artists are required"
+        });
+      }
+      
+      const result = await spotifyService.createAlbum(req.body);
+      
+      // If album already exists
+      if (!result.success) {
+        return res.status(200).json({
+          message: result.message,
+          existingId: result.existing.id,
+          success: false,
+          existing: result.existing
+        });
+      }
+      
+      // New album created
+      return res.status(201).json({
+        insertedId: result.insertedId,
+        success: true,
+        album: result.album
+      });
+    } catch (err) {
+      console.error("Error creating Spotify album:", err);
+      return res.status(500).json({
+        error: "Error adding album data",
         message: err.message
       });
     }
