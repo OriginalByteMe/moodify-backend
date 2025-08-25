@@ -28,10 +28,10 @@ export function up(knex) {
     })
     .then(() => {
       // Create GIN indexes on JSONB columns for color-based queries
-      return knex.raw('CREATE INDEX IF NOT EXISTS idx_tracks_colour_palette ON tracks USING GIN (colourPalette)');
+      return knex.raw('CREATE INDEX IF NOT EXISTS idx_tracks_colour_palette ON tracks USING GIN ("colourPalette")');
     })
     .then(() => {
-      return knex.raw('CREATE INDEX IF NOT EXISTS idx_albums_colour_palette ON albums USING GIN (colourPalette)');
+      return knex.raw('CREATE INDEX IF NOT EXISTS idx_albums_colour_palette ON albums USING GIN ("colourPalette")');
     });
 }
 
