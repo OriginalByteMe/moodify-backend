@@ -7,6 +7,11 @@
   "scripts": {
     "start": "node server/server.js",
     "dev": "nodemon server/server.js",
+    "build": "npm run dev",
+    "migrate": "knex migrate:latest",
+    "seed": "knex seed:run",
+    "migrate:rollback": "knex migrate:rollback",
+    "migrate:reset": "knex migrate:reset",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -25,7 +30,9 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jpeg-js": "^0.4.4",
+    "knex": "^3.1.0",
     "mongodb": "^6.16.0",
+    "pg": "^8.16.0",
     "png-js": "^1.0.0"
   },
   "devDependencies": {

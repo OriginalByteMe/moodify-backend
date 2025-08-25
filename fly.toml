@@ -16,8 +16,24 @@ primary_region = 'hkg'
   min_machines_running = 0
   processes = ['app']
 
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+
+# The following env vars will be set automatically by the 'fly postgres attach' command
+# DATABASE_URL = "postgres://postgres:password@moodify-db.internal:5432/moodify_db"
+# POSTGRES_HOST = "moodify-db.internal"
+# POSTGRES_DB = "moodify_backend_442duw"
+# POSTGRES_USER = "postgres"
+# POSTGRES_PASSWORD = "auto-generated-password"
+
+[deploy]
+  release_command = "npm run migrate"
+
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
   memory_mb = 1024
+
+

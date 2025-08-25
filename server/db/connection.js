@@ -1,107 +1,97 @@
-import { MongoClient, ServerApiVersion } from "mongodb";
-import 'dotenv/config'
-const uri = process.env.ATLAS_URI || "";
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-  autoSelectFamily: false, // Prevent TLS issues on Fly.io
-});
+import knex from 'knex';
+import 'dotenv/config';
+import pg from 'pg';
+import knexConfig from '../../knexfile.js';
 
-// Define schema validation for Spotify collection
-const spotifySchema = {
-  validator: {
-    $jsonSchema: {
-      bsonType: "object",
-      required: ["spotifyId", "title", "artists"],
-      properties: {
-        spotifyId: {
-          bsonType: "string",
-          description: "Spotify track ID - must be a string"
-        },
-        title: {
-          bsonType: "string",
-          description: "Track title"
-        },
-        artists: {
-          bsonType: "array",
-          description: "List of artists"
-        },
-        album: {
-          bsonType: "string"
-        },
-        albumCover: {
-          bsonType: "string"
-        },
-        songUrl: {
-          bsonType: "string"
-        },
-        colourPalette: {
-          bsonType: "array",
-          description: "Colour palette - must be an array of RGB values"
-        }
-      }
-    }
-  },
-  validationLevel: "moderate", // Apply to all inserts and updates
-  validationAction: "error"   // Reject invalid documents
-};
+const environment = process.env.NODE_ENV || 'development';
 
-// Connect and set up validation
-async function setupDatabase() {
+const db = knex(knexConfig[environment]);
+
+pg.types.setTypeParser(20, parseInt);
+pg.types.setTypeParser(1700, parseFloat);
+
+// Check database connection when the app starts
+async function checkConnection() {
   try {
-    // Connect the client to the server
-    await client.connect();
-    
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-    
-    const db = client.db("Spotify-db");
-    
-    // Check if collection exists, and apply/update validation
-    const collections = await db.listCollections({ name: "spotify" }).toArray();
-    
-    if (collections.length > 0) {
-      // Collection exists, modify it to add validation
-      await db.command({
-        collMod: "spotify",
-        ...spotifySchema
-      });
-      console.log("Updated validation schema for spotify collection");
-    } else {
-      // Create collection with validation
-      await db.createCollection("spotify", spotifySchema);
-      console.log("Created spotify collection with validation");
-    }
-    
-    // Create a unique index on spotifyId to ensure no duplicates
-    try {
-      await db.collection("spotify").createIndex({ "spotifyId": 1 }, { unique: true });
-      console.log("Created unique index on spotifyId field");
-    } catch (indexErr) {
-      console.error("Error creating unique index:", indexErr);
-      // If there are existing duplicate records, this will fail
-      // We don't want to stop the application, so we'll just log the error
-    }
-    
-    return db;
+    await db.raw('SELECT 1');
+    console.log('Successfully connected to PostgreSQL database');
+    return true;
   } catch (err) {
-    console.error("Database setup error:", err);
-    throw err;
+    console.error('Database connection error:', err);
+    return false;
   }
 }
 
-let db = null;
-
-try {
-  db = await setupDatabase();
-} catch (err) {
-  console.error("Failed to set up database with validation:", err);
-  // Fallback to basic connection without validation
-  db = client.db("Spotify-db");
-}
+checkConnection();
 
 export default db;
+
+export const tracksCollection = {
+  findOne: async (query) => {
+    return db('tracks').where(query).first();
+  },
+  
+  find: async (query) => {
+    return db('tracks').where(query);
+  },
+  
+  insertOne: async (document) => {
+    return db('tracks').insert(document).returning('*');
+  },
+  
+  insertMany: async (documents) => {
+    return db('tracks').insert(documents).returning('*');
+  },
+  
+  updateOne: async (query, update) => {
+    return db('tracks').where(query).update(update).returning('*');
+  },
+  
+  upsert: async (query, document) => {
+    const exists = await db('tracks').where(query).first();
+    if (exists) {
+      return db('tracks').where(query).update(document).returning('*');
+    } else {
+      return db('tracks').insert(document).returning('*');
+    }
+  },
+  
+  deleteOne: async (query) => {
+    return db('tracks').where(query).del();
+  }
+};
+
+export const albumCollection = {
+  findOne: async (query) => {
+    return db('albums').where(query).first();
+  },
+  
+  find: async (query) => {
+    return db('albums').where(query);
+  },
+  
+  insertOne: async (document) => {
+    return db('albums').insert(document).returning('*');
+  },
+  
+  insertMany: async (documents) => {
+    return db('albums').insert(documents).returning('*');
+  },
+  
+  updateOne: async (query, update) => {
+    return db('albums').where(query).update(update).returning('*');
+  },
+  
+  upsert: async (query, document) => {
+    const exists = await db('albums').where(query).first();
+    if (exists) {
+      return db('albums').where(query).update(document).returning('*');
+    } else {
+      return db('albums').insert(document).returning('*');
+    }
+  },
+  
+  deleteOne: async (query) => {
+    return db('albums').where(query).del();
+  }
+};
