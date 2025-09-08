@@ -12,7 +12,12 @@
     "seed": "knex seed:run",
     "migrate:rollback": "knex migrate:rollback",
     "migrate:reset": "knex migrate:reset",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "cross-env NODE_ENV=test NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest",
+    "test:watch": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "test:integration": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest --testPathPatterns=integration",
+    "test:unit": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest --testPathPatterns=unit",
+    "test:ci": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest --coverage --watchAll=false --passWithNoTests"
   },
   "repository": {
     "type": "git",
@@ -36,6 +41,13 @@
     "png-js": "^1.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "@testcontainers/postgresql": "^11.5.1",
+    "cross-env": "^10.0.0",
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
+    "jest-mock-extended": "^4.0.0",
+    "knex-mock-client": "^3.0.2",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.4"
   }
 }
