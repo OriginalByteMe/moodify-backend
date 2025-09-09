@@ -28,7 +28,12 @@ export function up(knex) {
         table.string('track_genre');
         
         // Processing status enum with default
-        table.enu('audio_features_status', ['unprocessed', 'processing', 'processed', 'failed', 'imported']).defaultTo('unprocessed');
+        table
+          .enu('audio_features_status', null, {
+            useNative: true,
+            enumName: 'audio_features_status_enum',
+          })
+          .defaultTo('unprocessed');
         
         // Indexes for efficient queue processing
         table.index('audio_features_status', 'idx_tracks_audio_features_status');
@@ -69,8 +74,9 @@ export function down(knex) {
       table.dropColumn('track_genre');
       table.dropColumn('audio_features_status');
     })
-    .then(() => {
-      // Drop the enum type
-      return knex.raw('DROP TYPE IF EXISTS audio_features_status_enum');
+    .then(async () => {
+      // Drop the enum types
+      await knex.raw('DROP TYPE IF EXISTS audio_features_status_enum');
+      await knex.raw('DROP TYPE IF EXISTS enum_tracks_audio_features_status');
     });
 }
