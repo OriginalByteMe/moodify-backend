@@ -1,5 +1,3 @@
-import spotifyService from '../services/spotifyService.js';
-
 /**
  * Controller for Spotify track endpoints
  * Handles HTTP requests and responses related to Spotify tracks
@@ -16,7 +14,7 @@ export const spotifyController = {
         return res.status(400).json({ error: "Spotify ID is required." });
       }
       
-      const result = await spotifyService.getTrackById(req.params.id);
+      const result = await req.spotifyService.getTrackById(req.params.id);
 
       if (!result) {
         return res.status(404).json({ error: "Spotify track not found." });
@@ -44,7 +42,7 @@ export const spotifyController = {
         });
       }
       
-      const results = await spotifyService.getTracksByIds(ids);
+      const results = await req.spotifyService.getTracksByIds(ids);
       return res.status(200).json(results);
     } catch (err) {
       console.error("Error retrieving Spotify tracks:", err);
@@ -63,7 +61,7 @@ export const spotifyController = {
         return res.status(400).json({ error: "Album ID is required." });
       }
       
-      const results = await spotifyService.getTracksByAlbumId(albumId);
+      const results = await req.spotifyService.getTracksByAlbumId(albumId);
       return res.status(200).json(results);
     } catch (err) {
       console.error("Error retrieving Spotify tracks:", err);
@@ -88,7 +86,7 @@ export const spotifyController = {
         });
       }
       
-      const result = await spotifyService.createTrack(req.body);
+      const result = await req.spotifyService.createTrack(req.body);
       
       // If track already exists
       if (!result.success) {
@@ -128,7 +126,7 @@ export const spotifyController = {
         });
       }
       
-      const result = await spotifyService.createAlbum(req.body);
+      const result = await req.spotifyService.createAlbum(req.body);
       
       // If album already exists
       if (!result.success) {
@@ -162,7 +160,7 @@ export const spotifyController = {
    */
   async createBulkTracks(req, res) {
     try {
-      const result = await spotifyService.createBulkTracks(req.body);
+      const result = await req.spotifyService.createBulkTracks(req.body);
       return res.status(200).json(result);
     } catch (err) {
       console.error("Error creating bulk Spotify tracks:", err);

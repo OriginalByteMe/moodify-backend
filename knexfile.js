@@ -6,6 +6,26 @@ import 'dotenv/config';
  */
 export default {
 
+  test: {
+    client: 'pg',
+    connection: {
+      host: process.env.TEST_POSTGRES_HOST || process.env.POSTGRES_HOST || 'localhost',
+      port: process.env.TEST_POSTGRES_PORT || process.env.POSTGRES_PORT || 5432,
+      user: process.env.TEST_POSTGRES_USER || process.env.POSTGRES_USER || 'moodify',
+      password: process.env.TEST_POSTGRES_PASSWORD || process.env.POSTGRES_PASSWORD || 'moodify',
+      // database will be set dynamically in tests
+      ssl: process.env.TEST_POSTGRES_SSL === 'true' ? { rejectUnauthorized: false } : false
+    },
+    pool: {
+      min: 2,
+      max: 10
+    },
+    migrations: {
+      tableName: 'knex_migrations',
+      directory: './migrations' // Use same migrations as production
+    }
+  },
+
   development: {
     client: 'pg',
     connection: {

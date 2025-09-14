@@ -1,18 +1,26 @@
-import db, { tracksCollection, albumCollection } from "../db/connection.js";
+import { createTracksCollection, createAlbumCollection } from "../db/connection.js";
 
 /**
- * Service layer for Spotify track operations
- * Handles all business logic for Spotify data
+ * Create Spotify service with database dependency injection
+ * @param {Object} database - Knex database instance
+ * @param {Object} options - Options object
+ * @param {Object} options.tracksCollection - Tracks collection interface
+ * @param {Object} options.albumCollection - Album collection interface
+ * @returns {Object} - Spotify service instance
  */
-export const spotifyService = {
-  /**
-   * Find a single track by spotifyId
-   * @param {string} spotifyId - The Spotify track ID
-   * @returns {Promise<Object>} - The track object or null if not found
-   */
-  async getTrackById(spotifyId) {
-    return tracksCollection.findOne({ spotifyId });
-  },
+export function createSpotifyService(database, options = {}) {
+  const tracks = options.tracksCollection || createTracksCollection(database);
+  const albums = options.albumCollection || createAlbumCollection(database);
+  
+  return {
+    /**
+     * Find a single track by spotifyId
+     * @param {string} spotifyId - The Spotify track ID
+     * @returns {Promise<Object>} - The track object or null if not found
+     */
+    async getTrackById(spotifyId) {
+      return tracks.findOne({ spotifyId });
+    },
 
   /**
    * Get multiple tracks by their spotifyIds
@@ -24,7 +32,7 @@ export const spotifyService = {
       throw new Error("Invalid or empty spotifyIds array");
     }
     
-    return db('tracks').whereIn('spotifyId', spotifyIds);
+    return database('tracks').whereIn('spotifyId', spotifyIds);
   },
 
   /**
@@ -38,14 +46,14 @@ export const spotifyService = {
     }
     
     // First find the album by its Spotify ID
-    const album = await db('albums').where({ spotifyId: albumId }).first();
+    const album = await database('albums').where({ spotifyId: albumId }).first();
     
     if (!album) {
       return [];
     }
     
     // Then find all tracks with the album's primary key
-    return tracksCollection.find({ album_id: album.id });
+    return tracks.find({ album_id: album.id });
   },
 
   /**
@@ -60,7 +68,7 @@ export const spotifyService = {
     }
     
     // Check if record already exists
-    const existing = await tracksCollection.findOne({ spotifyId: trackData.spotifyId });
+    const existing = await tracks.findOne({ spotifyId: trackData.spotifyId });
     if (existing) {
       return {
         success: false,
@@ -70,17 +78,21 @@ export const spotifyService = {
     }
 
     // Check if album already exists
-    const album = await albumCollection.findOne({ spotifyId: trackData.spotifyAlbumId });
+    const album = await albums.findOne({ spotifyId: trackData.spotifyAlbumId });
     if (!album) {
       // Create new album with spotifyId
       const newAlbum = {
         spotifyId: trackData.spotifyAlbumId,
         album: trackData.album,
+        artists: trackData.artists,
         albumCover: trackData.albumCover,
         colourPalette: trackData.albumColourPalette,
       };
-      const result = await albumCollection.insertOne(newAlbum);
+      const result = await albums.insertOne(newAlbum);
       trackData.album_id = result[0].id;
+    } else {
+      // Use existing album's ID
+      trackData.album_id = album.id;
     }
     
     // Format the track data
@@ -96,7 +108,7 @@ export const spotifyService = {
     };
     
     // Insert the record
-    const result = await tracksCollection.insertOne(newTrack);
+    const result = await tracks.insertOne(newTrack);
     
     return {
       success: true,
@@ -117,7 +129,7 @@ export const spotifyService = {
     }
     
     // Check if album already exists
-    const existing = await albumCollection.findOne({ spotifyId: albumData.spotifyId });
+    const existing = await albums.findOne({ spotifyId: albumData.spotifyId });
     if (existing) {
       return {
         success: false,
@@ -136,12 +148,86 @@ export const spotifyService = {
     };
     
     // Insert the album
-    const result = await albumCollection.insertOne(newAlbum);
+    const result = await albums.insertOne(newAlbum);
     
     return {
       success: true,
       insertedId: result[0].id,
       album: result[0]
+    };
+  },
+
+  /**
+   * Update audio features for a track (for queue processing)
+   * @param {string} spotifyId - The Spotify track ID
+   * @param {Object} audioFeaturesData - Audio features data
+   * @param {string} status - Processing status ('processed', 'failed', 'imported')
+   * @returns {Promise<Object>} - Update result
+   */
+  async updateTrackAudioFeatures(spotifyId, audioFeaturesData, status = 'processed') {
+    if (!spotifyId) {
+      throw new Error('spotifyId is required');
+    }
+
+    const updateData = {
+      ...audioFeaturesData,
+      audio_features_status: status,
+      updated_at: new Date()
+    };
+
+    const result = await database('tracks')
+      .where({ spotifyId })
+      .update(updateData)
+      .returning('*');
+
+    if (result.length === 0) {
+      throw new Error(`Track with spotifyId ${spotifyId} not found`);
+    }
+
+    return {
+      success: true,
+      track: result[0]
+    };
+  },
+
+  /**
+   * Get unprocessed tracks for queue processing
+   * @param {number} limit - Maximum number of tracks to return
+   * @returns {Promise<Object[]>} - Array of unprocessed tracks
+   */
+  async getUnprocessedTracks(limit = 100) {
+    return database('tracks')
+      .where({ audio_features_status: 'unprocessed' })
+      .orderBy('created_at', 'asc')
+      .limit(limit);
+  },
+
+  /**
+   * Update processing status for a track
+   * @param {string} spotifyId - The Spotify track ID
+   * @param {string} status - New status
+   * @returns {Promise<Object>} - Update result
+   */
+  async updateProcessingStatus(spotifyId, status) {
+    if (!spotifyId || !status) {
+      throw new Error('spotifyId and status are required');
+    }
+
+    const result = await database('tracks')
+      .where({ spotifyId })
+      .update({ 
+        audio_features_status: status,
+        updated_at: new Date()
+      })
+      .returning(['id', 'spotifyId', 'audio_features_status']);
+
+    if (result.length === 0) {
+      throw new Error(`Track with spotifyId ${spotifyId} not found`);
+    }
+
+    return {
+      success: true,
+      track: result[0]
     };
   },
 
@@ -158,7 +244,7 @@ export const spotifyService = {
     
     // Validate all documents have required fields
     const invalidItems = tracksData.filter(item => 
-      !item.spotifyId || !item.title || !Array.isArray(item.artists));
+      !item.spotifyId || !item.title || !item.artists);
     
     if (invalidItems.length > 0) {
       throw new Error("Some items are missing required fields (spotifyId, title, artists)");
@@ -176,7 +262,7 @@ export const spotifyService = {
     }
     
     // Start a transaction
-    const trx = await db.transaction();
+    const trx = await database.transaction();
     
     try {
       // Check which IDs already exist in the database
@@ -206,7 +292,7 @@ export const spotifyService = {
         album: data.album || "",
         albumCover: data.albumCover || "",
         songUrl: data.songUrl || "",
-        colourPalette: data.colourPalette || [],
+        colourPalette: JSON.stringify(data.colourPalette || []),
       }));
       
       let insertedIds = [];
@@ -246,6 +332,5 @@ export const spotifyService = {
       throw error;
     }
   }
-};
-
-export default spotifyService;
+  };
+}
