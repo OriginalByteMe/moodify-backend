@@ -161,6 +161,60 @@ export const spotifyController = {
   },
 
   /**
+   * Update an existing album by Spotify ID
+   * @param {Request} req
+   * @param {Response} res
+   */
+  async patchAlbum(req, res) {
+    try {
+      const id = req.params.id;
+      if (!id) {
+        return res.status(400).json({ error: 'Spotify ID is required.' });
+      }
+
+      const result = await req.spotifyService.updateAlbum(id, req.body || {});
+      return res.status(200).json({ success: true, album: result.album });
+    } catch (err) {
+      console.error('Error updating Spotify album:', err);
+      const message = err?.message || '';
+      if (message.includes('not found')) {
+        return res.status(404).json({ error: message });
+      }
+      if (message.includes('No valid fields') || message.toLowerCase().includes('invalid')) {
+        return res.status(400).json({ error: message });
+      }
+      return res.status(500).json({ error: 'Error updating album', message });
+    }
+  },
+
+  /**
+   * Update an existing track by Spotify ID
+   * @param {Request} req
+   * @param {Response} res
+   */
+  async patchTrack(req, res) {
+    try {
+      const id = req.params.id;
+      if (!id) {
+        return res.status(400).json({ error: 'Spotify ID is required.' });
+      }
+
+      const result = await req.spotifyService.updateTrack(id, req.body || {});
+      return res.status(200).json({ success: true, track: result.track });
+    } catch (err) {
+      console.error('Error updating Spotify track:', err);
+      const message = err?.message || '';
+      if (message.includes('not found')) {
+        return res.status(404).json({ error: message });
+      }
+      if (message.includes('No valid fields') || message.toLowerCase().includes('invalid')) {
+        return res.status(400).json({ error: message });
+      }
+      return res.status(500).json({ error: 'Error updating track', message });
+    }
+  },
+
+  /**
    * Create multiple tracks in bulk
    * @param {Request} req - Express request object
    * @param {Response} res - Express response object

@@ -23,6 +23,12 @@ router.post("/tracks/bulk", spotifyController.createBulkTracks);
 // Create a new spotify album
 router.post("/albums", spotifyController.createAlbum);
 
+// Update a spotify track by Spotify ID
+router.patch("/tracks/:id", spotifyController.patchTrack);
+
+// Update a spotify album by Spotify ID
+router.patch("/albums/:id", spotifyController.patchAlbum);
+
 // Generate color palette from image URL (for frontend compatibility)
 router.post("/palettizer", async (req, res) => {
     try {
