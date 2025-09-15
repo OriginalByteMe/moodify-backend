@@ -12,6 +12,25 @@ export function createSpotifyService(database, options = {}) {
   const tracks = options.tracksCollection || createTracksCollection(database);
   const albums = options.albumCollection || createAlbumCollection(database);
   
+  // Normalize palette input from clients (array, object, or JSON string)
+  const normalizePalette = (value, fieldName = 'colourPalette') => {
+    if (value == null) return [];
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return normalizePalette(parsed, fieldName);
+      } catch (e) {
+        throw new Error(`Invalid ${fieldName} JSON`);
+      }
+    }
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'object') {
+      if (Array.isArray(value.palette)) return value.palette;
+      return value; // allow object forms
+    }
+    throw new Error(`Invalid ${fieldName} type`);
+  };
+  
   return {
     /**
      * Find a single track by spotifyId
@@ -77,6 +96,11 @@ export function createSpotifyService(database, options = {}) {
       };
     }
 
+    // Normalize palettes from incoming payloads
+    const albumColourPalette = normalizePalette(trackData.albumColourPalette, 'albumColourPalette');
+    const trackColourPalette = normalizePalette(trackData.colourPalette, 'colourPalette');
+    // Debug logging removed after validation
+
     // Check if album already exists
     const album = await albums.findOne({ spotifyId: trackData.spotifyAlbumId });
     if (!album) {
@@ -86,8 +110,10 @@ export function createSpotifyService(database, options = {}) {
         album: trackData.album,
         artists: trackData.artists,
         albumCover: trackData.albumCover,
-        colourPalette: trackData.albumColourPalette,
+        // For JSONB columns, pass JSON string to avoid pg array literal encoding
+        colourPalette: JSON.stringify(albumColourPalette),
       };
+      // Insert album
       const result = await albums.insertOne(newAlbum);
       trackData.album_id = result[0].id;
     } else {
@@ -95,7 +121,7 @@ export function createSpotifyService(database, options = {}) {
       trackData.album_id = album.id;
     }
     
-    // Format the track data
+    // Format the track data, allowing optional Spotify audio features
     const newTrack = {
       spotifyId: trackData.spotifyId,
       title: trackData.title,
@@ -103,9 +129,54 @@ export function createSpotifyService(database, options = {}) {
       album: trackData.album,
       albumCover: trackData.albumCover,
       songUrl: trackData.songUrl,
-      colourPalette: trackData.colourPalette,
+      // For JSONB columns, pass JSON string to avoid pg array literal encoding
+      colourPalette: JSON.stringify(trackColourPalette),
       album_id: trackData.album_id,
     };
+
+    // Map optional audio feature/stat fields if provided from the frontend
+    const audioFeatureFields = [
+      'album_name',
+      'track_name',
+      'popularity',
+      'duration_ms',
+      'explicit',
+      'danceability',
+      'energy',
+      'key',
+      'loudness',
+      'mode',
+      'speechiness',
+      'acousticness',
+      'instrumentalness',
+      'liveness',
+      'valence',
+      'tempo',
+      'time_signature',
+      'track_genre',
+      'audio_features_status'
+    ];
+
+    let anyAudioFeatureProvided = false;
+    for (const field of audioFeatureFields) {
+      if (typeof trackData[field] !== 'undefined' && trackData[field] !== null) {
+        newTrack[field] = trackData[field];
+        if (field !== 'audio_features_status') anyAudioFeatureProvided = true;
+      }
+    }
+
+    // Provide sensible defaults for names if not explicitly set
+    if (typeof newTrack.album_name === 'undefined' && typeof trackData.album !== 'undefined') {
+      newTrack.album_name = trackData.album;
+    }
+    if (typeof newTrack.track_name === 'undefined' && typeof trackData.title !== 'undefined') {
+      newTrack.track_name = trackData.title;
+    }
+
+    // If audio features were provided but status not set, mark as 'imported'
+    if (anyAudioFeatureProvided && typeof newTrack.audio_features_status === 'undefined') {
+      newTrack.audio_features_status = 'imported';
+    }
     
     // Insert the record
     const result = await tracks.insertOne(newTrack);
@@ -144,7 +215,8 @@ export function createSpotifyService(database, options = {}) {
       album: albumData.album,
       artists: albumData.artists,
       albumCover: albumData.albumCover || "",
-      colourPalette: albumData.colourPalette || []
+      // For JSONB columns, pass JSON string to avoid pg array literal encoding
+      colourPalette: JSON.stringify(normalizePalette(albumData.colourPalette || [], 'colourPalette'))
     };
     
     // Insert the album
@@ -284,16 +356,46 @@ export function createSpotifyService(database, options = {}) {
         newDocuments = tracksData;
       }
       
-      // Format the documents for insertion
-      const formattedDocuments = newDocuments.map((data) => ({
-        spotifyId: data.spotifyId,
-        title: data.title,
-        artists: data.artists,
-        album: data.album || "",
-        albumCover: data.albumCover || "",
-        songUrl: data.songUrl || "",
-        colourPalette: JSON.stringify(data.colourPalette || []),
-      }));
+      // Format the documents for insertion (allowing optional audio features)
+      const formattedDocuments = newDocuments.map((data) => {
+        const doc = {
+          spotifyId: data.spotifyId,
+          title: data.title,
+          artists: data.artists,
+          album: data.album || "",
+          albumCover: data.albumCover || "",
+          songUrl: data.songUrl || "",
+          // For JSONB columns, pass JSON string to avoid pg array literal encoding
+          colourPalette: JSON.stringify(normalizePalette(data.colourPalette || [], 'colourPalette')),
+        };
+
+        const audioFields = [
+          'album_name', 'track_name', 'popularity', 'duration_ms', 'explicit', 'danceability',
+          'energy', 'key', 'loudness', 'mode', 'speechiness', 'acousticness', 'instrumentalness',
+          'liveness', 'valence', 'tempo', 'time_signature', 'track_genre', 'audio_features_status'
+        ];
+
+        let anyProvided = false;
+        for (const f of audioFields) {
+          if (typeof data[f] !== 'undefined' && data[f] !== null) {
+            doc[f] = data[f];
+            if (f !== 'audio_features_status') anyProvided = true;
+          }
+        }
+
+        if (typeof doc.album_name === 'undefined' && typeof data.album !== 'undefined') {
+          doc.album_name = data.album;
+        }
+        if (typeof doc.track_name === 'undefined' && typeof data.title !== 'undefined') {
+          doc.track_name = data.title;
+        }
+
+        if (anyProvided && typeof doc.audio_features_status === 'undefined') {
+          doc.audio_features_status = 'imported';
+        }
+
+        return doc;
+      });
       
       let insertedIds = [];
       
