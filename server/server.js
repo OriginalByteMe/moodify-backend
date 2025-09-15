@@ -1,12 +1,12 @@
-import express from "express";
 import cors from "cors";
+import 'dotenv/config';
+import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import spotify from "./routes/spotify.js";
-import palette from "./routes/palette.js"
-import health from "./routes/health.js"
-import 'dotenv/config'
 import { createDatabaseConnection } from "./db/connection.js";
+import health from "./routes/health.js";
+import palette from "./routes/palette.js";
+import spotify from "./routes/spotify.js";
 import { createSpotifyService } from "./services/spotifyService.js";
 
 export function createApp(db) {
@@ -36,7 +36,7 @@ export function createApp(db) {
   });
 
   // Serve a simple Redoc UI without extra dependencies
-  app.get("/docs", (_req, res) => {
+  app.get("/docs/openapi", (_req, res) => {
     res
       .type("html")
       .send(`<!DOCTYPE html>
@@ -53,6 +53,35 @@ export function createApp(db) {
   <body>
     <redoc spec-url="/openapi.json"></redoc>
     <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+  </body>
+  </html>`);
+  });
+
+  // Serve Swagger UI (interactive Try it out) via CDN
+  app.get("/docs", (_req, res) => {
+    res
+      .type("html")
+      .send(`<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Moodify API Swagger UI</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+    <style>body { margin: 0; }</style>
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" crossorigin></script>
+    <script>
+      window.ui = SwaggerUIBundle({
+        url: '/openapi.json',
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        layout: 'BaseLayout',
+        persistAuthorization: true
+      });
+    </script>
   </body>
   </html>`);
   });

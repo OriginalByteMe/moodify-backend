@@ -7,7 +7,8 @@
   },
   "servers": [
     { "url": "/", "description": "Current host" },
-    { "url": "http://localhost:5050/", "description": "Local development" }
+    { "url": "http://localhost:5050/", "description": "Local development" },
+    { "url": "https://moodify-backend-442duw.fly.dev/", "description": "Production" }
   ],
   "tags": [
     { "name": "Health", "description": "Health checks" },
@@ -381,4 +382,3 @@
     }
   }
 }
-
