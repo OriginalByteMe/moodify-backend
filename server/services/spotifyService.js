@@ -53,7 +53,7 @@ export function createSpotifyService(database, options = {}) {
       if (!updates || typeof updates !== 'object') throw new Error('Invalid update payload');
 
       const allowedTrackFields = new Set([
-        'title', 'artists', 'album', 'albumCover', 'songUrl',
+        'title', 'artists', 'album', 'albumCover', 'songUrl', 'previewUrl',
         'colourPalette',
         // audio features
         'album_name', 'track_name', 'popularity', 'duration_ms', 'explicit',
@@ -209,6 +209,7 @@ export function createSpotifyService(database, options = {}) {
       album: trackData.album,
       albumCover: trackData.albumCover,
       songUrl: trackData.songUrl,
+      previewUrl: trackData.previewUrl,
       // For JSONB columns, pass JSON string to avoid pg array literal encoding
       colourPalette: JSON.stringify(trackColourPalette),
       album_id: trackData.album_id,
@@ -486,6 +487,7 @@ export function createSpotifyService(database, options = {}) {
           album: data.album || "",
           albumCover: data.albumCover || "",
           songUrl: data.songUrl || "",
+          previewUrl: data.previewUrl || null,
           // For JSONB columns, pass JSON string to avoid pg array literal encoding
           colourPalette: JSON.stringify(normalizePalette(data.colourPalette || [], 'colourPalette')),
         };
