@@ -4,3 +4,10 @@
 .env
 Dockerfile
 fly.toml
+/.github
+/coverage
+/tests
+/.vscode
+*.log
+.DS_Store
+/web-bundles
