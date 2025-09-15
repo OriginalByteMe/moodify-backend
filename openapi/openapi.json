@@ -53,6 +53,26 @@
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
           }
         }
+      },
+      "patch": {
+        "tags": ["Spotify"],
+        "summary": "Update track by Spotify ID",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateTrackRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Track updated",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateTrackSuccess" } } }
+          },
+          "400": { "description": "Invalid input", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "404": { "description": "Track not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
       }
     },
     "/spotify/tracks/bulk": {
@@ -107,6 +127,26 @@
             "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Track" } } } }
           },
           "400": { "description": "Invalid request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      },
+      "patch": {
+        "tags": ["Spotify"],
+        "summary": "Update album by Spotify ID",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateAlbumRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Album updated",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateAlbumSuccess" } } }
+          },
+          "400": { "description": "Invalid input", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "404": { "description": "Album not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
           "500": { "description": "Server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
         }
       }
@@ -356,6 +396,61 @@
           "message": { "type": "string" },
           "existing": { "$ref": "#/components/schemas/Album" },
           "success": { "type": "boolean", "example": false }
+        }
+      },
+      "UpdateTrackRequest": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "artists": { "type": "string" },
+          "album": { "type": "string" },
+          "albumCover": { "type": "string", "format": "uri" },
+          "songUrl": { "type": "string", "format": "uri" },
+          "colourPalette": { "$ref": "#/components/schemas/Palette" },
+          "spotifyAlbumId": { "type": "string" },
+          "albumColourPalette": { "$ref": "#/components/schemas/Palette" },
+          "album_name": { "type": "string" },
+          "track_name": { "type": "string" },
+          "popularity": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "duration_ms": { "type": "integer" },
+          "explicit": { "type": "boolean" },
+          "danceability": { "type": "number", "format": "float" },
+          "energy": { "type": "number", "format": "float" },
+          "key": { "type": "integer" },
+          "loudness": { "type": "number", "format": "float" },
+          "mode": { "type": "integer" },
+          "speechiness": { "type": "number", "format": "float" },
+          "acousticness": { "type": "number", "format": "float" },
+          "instrumentalness": { "type": "number", "format": "float" },
+          "liveness": { "type": "number", "format": "float" },
+          "valence": { "type": "number", "format": "float" },
+          "tempo": { "type": "number", "format": "float" },
+          "time_signature": { "type": "integer" },
+          "track_genre": { "type": "string" },
+          "audio_features_status": { "type": "string", "enum": ["unprocessed", "processing", "processed", "failed", "imported"] }
+        }
+      },
+      "UpdateTrackSuccess": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "track": { "$ref": "#/components/schemas/Track" }
+        }
+      },
+      "UpdateAlbumRequest": {
+        "type": "object",
+        "properties": {
+          "album": { "type": "string" },
+          "artists": { "type": "string" },
+          "albumCover": { "type": "string", "format": "uri" },
+          "colourPalette": { "$ref": "#/components/schemas/Palette" }
+        }
+      },
+      "UpdateAlbumSuccess": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "album": { "$ref": "#/components/schemas/Album" }
         }
       },
       "AlbumPaletteRequest": {

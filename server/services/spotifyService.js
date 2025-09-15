@@ -41,6 +41,86 @@ export function createSpotifyService(database, options = {}) {
       return tracks.findOne({ spotifyId });
     },
 
+    /**
+     * Update an existing Spotify track by spotifyId
+     * Allows updating metadata, colour palette, album association, and audio features
+     * @param {string} spotifyId - The Spotify track ID
+     * @param {Object} updates - Partial track fields to update
+     * @returns {Promise<Object>} - Result with updated track
+     */
+    async updateTrack(spotifyId, updates = {}) {
+      if (!spotifyId) throw new Error('spotifyId is required');
+      if (!updates || typeof updates !== 'object') throw new Error('Invalid update payload');
+
+      const allowedTrackFields = new Set([
+        'title', 'artists', 'album', 'albumCover', 'songUrl',
+        'colourPalette',
+        // audio features
+        'album_name', 'track_name', 'popularity', 'duration_ms', 'explicit',
+        'danceability', 'energy', 'key', 'loudness', 'mode', 'speechiness',
+        'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo',
+        'time_signature', 'track_genre', 'audio_features_status'
+      ]);
+
+      const updateData = {};
+
+      // Handle colourPalette normalization for track
+      if (Object.prototype.hasOwnProperty.call(updates, 'colourPalette')) {
+        updateData.colourPalette = JSON.stringify(normalizePalette(updates.colourPalette, 'colourPalette'));
+      }
+
+      // Copy other allowed scalar fields if provided (including audio features)
+      for (const key of Object.keys(updates)) {
+        if (allowedTrackFields.has(key) && key !== 'colourPalette') {
+          const value = updates[key];
+          if (typeof value !== 'undefined') updateData[key] = value;
+        }
+      }
+
+      // Maintain sensible defaults for album_name/track_name if album/title provided without explicit *_name
+      if (Object.prototype.hasOwnProperty.call(updateData, 'album') && !Object.prototype.hasOwnProperty.call(updateData, 'album_name')) {
+        updateData.album_name = updateData.album;
+      }
+      if (Object.prototype.hasOwnProperty.call(updateData, 'title') && !Object.prototype.hasOwnProperty.call(updateData, 'track_name')) {
+        updateData.track_name = updateData.title;
+      }
+
+      // Optionally re-associate to a different album via spotifyAlbumId
+      if (typeof updates.spotifyAlbumId !== 'undefined' && updates.spotifyAlbumId !== null) {
+        let album = await albums.findOne({ spotifyId: updates.spotifyAlbumId });
+        if (!album) {
+          const newAlbum = {
+            spotifyId: updates.spotifyAlbumId,
+            album: updates.album,
+            artists: updates.artists,
+            albumCover: updates.albumCover,
+            colourPalette: JSON.stringify(normalizePalette(updates.albumColourPalette || [], 'albumColourPalette'))
+          };
+          const inserted = await albums.insertOne(newAlbum);
+          album = inserted[0];
+        }
+        updateData.album_id = album.id;
+      }
+
+      // Ensure we have something to update
+      if (Object.keys(updateData).length === 0) {
+        throw new Error('No valid fields to update');
+      }
+
+      updateData.updated_at = new Date();
+
+      const result = await database('tracks')
+        .where({ spotifyId })
+        .update(updateData)
+        .returning('*');
+
+      if (result.length === 0) {
+        throw new Error(`Track with spotifyId ${spotifyId} not found`);
+      }
+
+      return { success: true, track: result[0] };
+    },
+
   /**
    * Get multiple tracks by their spotifyIds
    * @param {string[]} spotifyIds - Array of Spotify track IDs
@@ -227,6 +307,47 @@ export function createSpotifyService(database, options = {}) {
       insertedId: result[0].id,
       album: result[0]
     };
+  },
+
+  /**
+   * Update an existing Spotify album by spotifyId
+   * @param {string} spotifyId - The Spotify album ID
+   * @param {Object} updates - Partial album fields to update
+   * @returns {Promise<Object>} - Result with updated album
+   */
+  async updateAlbum(spotifyId, updates = {}) {
+    if (!spotifyId) throw new Error('spotifyId is required');
+    if (!updates || typeof updates !== 'object') throw new Error('Invalid update payload');
+
+    const allowedAlbumFields = new Set(['album', 'artists', 'albumCover', 'colourPalette']);
+    const updateData = {};
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'colourPalette')) {
+      updateData.colourPalette = JSON.stringify(normalizePalette(updates.colourPalette, 'colourPalette'));
+    }
+    for (const key of Object.keys(updates)) {
+      if (allowedAlbumFields.has(key) && key !== 'colourPalette') {
+        const value = updates[key];
+        if (typeof value !== 'undefined') updateData[key] = value;
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw new Error('No valid fields to update');
+    }
+
+    updateData.updated_at = new Date();
+
+    const result = await database('albums')
+      .where({ spotifyId })
+      .update(updateData)
+      .returning('*');
+
+    if (result.length === 0) {
+      throw new Error(`Album with spotifyId ${spotifyId} not found`);
+    }
+
+    return { success: true, album: result[0] };
   },
 
   /**
