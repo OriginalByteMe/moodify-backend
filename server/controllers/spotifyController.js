@@ -105,6 +105,10 @@ export const spotifyController = {
       });
     } catch (err) {
       console.error("Error creating Spotify track:", err);
+      // Validation/Bad request from service
+      if (err.message && (err.message.toLowerCase().includes('missing required fields') || err.message.toLowerCase().includes('invalid') )) {
+        return res.status(400).json({ error: err.message });
+      }
       return res.status(500).json({
         error: "Error adding spotify data",
         message: err.message
@@ -146,6 +150,9 @@ export const spotifyController = {
       });
     } catch (err) {
       console.error("Error creating Spotify album:", err);
+      if (err.message && err.message.toLowerCase().includes('missing required fields')) {
+        return res.status(400).json({ error: err.message });
+      }
       return res.status(500).json({
         error: "Error adding album data",
         message: err.message

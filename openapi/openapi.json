@@ -79,6 +79,7 @@
       "post": {
         "tags": ["Spotify"],
         "summary": "Create multiple tracks in bulk",
+        "description": "Bulk insert of tracks. Each item may optionally include Spotify audio features. If features are present without status, audio_features_status defaults to 'imported'. Existing tracks by spotifyId are skipped.",
         "requestBody": {
           "required": true,
           "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkCreateTracksRequest" } } }
@@ -114,6 +115,7 @@
       "post": {
         "tags": ["Spotify"],
         "summary": "Create a track",
+        "description": "Creates a track. Optionally accepts Spotify audio features (popularity, tempo, etc.). If audio features are present and no status is provided, the track's audio_features_status is set to 'imported'.",
         "requestBody": {
           "required": true,
           "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateTrackRequest" } } }
@@ -241,7 +243,26 @@
           "albumCover": { "type": "string" },
           "songUrl": { "type": "string" },
           "colourPalette": { "$ref": "#/components/schemas/Palette" },
-          "album_id": { "type": "integer" }
+          "album_id": { "type": "integer" },
+          "album_name": { "type": "string" },
+          "track_name": { "type": "string" },
+          "popularity": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "duration_ms": { "type": "integer" },
+          "explicit": { "type": "boolean" },
+          "danceability": { "type": "number", "format": "float" },
+          "energy": { "type": "number", "format": "float" },
+          "key": { "type": "integer" },
+          "loudness": { "type": "number", "format": "float" },
+          "mode": { "type": "integer" },
+          "speechiness": { "type": "number", "format": "float" },
+          "acousticness": { "type": "number", "format": "float" },
+          "instrumentalness": { "type": "number", "format": "float" },
+          "liveness": { "type": "number", "format": "float" },
+          "valence": { "type": "number", "format": "float" },
+          "tempo": { "type": "number", "format": "float" },
+          "time_signature": { "type": "integer" },
+          "track_genre": { "type": "string" },
+          "audio_features_status": { "type": "string", "enum": ["unprocessed", "processing", "processed", "failed", "imported"] }
         }
       },
       "Album": {
@@ -272,7 +293,26 @@
           "albumCover": { "type": "string", "format": "uri" },
           "songUrl": { "type": "string", "format": "uri" },
           "colourPalette": { "$ref": "#/components/schemas/Palette" },
-          "albumColourPalette": { "$ref": "#/components/schemas/Palette" }
+          "albumColourPalette": { "$ref": "#/components/schemas/Palette" },
+          "album_name": { "type": "string" },
+          "track_name": { "type": "string" },
+          "popularity": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "duration_ms": { "type": "integer" },
+          "explicit": { "type": "boolean" },
+          "danceability": { "type": "number", "format": "float" },
+          "energy": { "type": "number", "format": "float" },
+          "key": { "type": "integer" },
+          "loudness": { "type": "number", "format": "float" },
+          "mode": { "type": "integer" },
+          "speechiness": { "type": "number", "format": "float" },
+          "acousticness": { "type": "number", "format": "float" },
+          "instrumentalness": { "type": "number", "format": "float" },
+          "liveness": { "type": "number", "format": "float" },
+          "valence": { "type": "number", "format": "float" },
+          "tempo": { "type": "number", "format": "float" },
+          "time_signature": { "type": "integer" },
+          "track_genre": { "type": "string" },
+          "audio_features_status": { "type": "string", "enum": ["unprocessed", "processing", "processed", "failed", "imported"] }
         }
       },
       "CreateTrackSuccess": {
@@ -338,7 +378,26 @@
             "album": { "type": "string" },
             "albumCover": { "type": "string", "format": "uri" },
             "songUrl": { "type": "string", "format": "uri" },
-            "colourPalette": { "$ref": "#/components/schemas/Palette" }
+            "colourPalette": { "$ref": "#/components/schemas/Palette" },
+            "album_name": { "type": "string" },
+            "track_name": { "type": "string" },
+            "popularity": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "duration_ms": { "type": "integer" },
+            "explicit": { "type": "boolean" },
+            "danceability": { "type": "number", "format": "float" },
+            "energy": { "type": "number", "format": "float" },
+            "key": { "type": "integer" },
+            "loudness": { "type": "number", "format": "float" },
+            "mode": { "type": "integer" },
+            "speechiness": { "type": "number", "format": "float" },
+            "acousticness": { "type": "number", "format": "float" },
+            "instrumentalness": { "type": "number", "format": "float" },
+            "liveness": { "type": "number", "format": "float" },
+            "valence": { "type": "number", "format": "float" },
+            "tempo": { "type": "number", "format": "float" },
+            "time_signature": { "type": "integer" },
+            "track_genre": { "type": "string" },
+            "audio_features_status": { "type": "string", "enum": ["unprocessed", "processing", "processed", "failed", "imported"] }
           }
         }
       },
