@@ -13,29 +13,29 @@ WORKDIR /app
 ARG NODE_ENV="production"
 ENV NODE_ENV=${NODE_ENV}
 
-# Throw-away build stage to reduce size of final image
-FROM base AS build
+# Install only Node deps in a cached layer, then copy app code.
+# This avoids slow apt-get and speeds up rebuilds.
 
-# Install packages needed to build node modules
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
-
-# Copy package files
+# Dependencies layer (cached when package files unchanged)
+FROM base AS deps
 COPY package-lock.json package.json ./
+# Use BuildKit cache for npm to speed up repeat builds
+RUN --mount=type=cache,target=/root/.npm \
+    if [ "$NODE_ENV" = "production" ]; then \
+      npm ci --omit=dev --no-audit --no-fund; \
+    else \
+      npm ci --include=dev --no-audit --no-fund; \
+    fi
 
-# Install dependencies (with or without dev dependencies based on NODE_ENV)
-RUN if [ "$NODE_ENV" = "production" ] ; then npm ci ; else npm ci --include=dev ; fi
-
-# Copy application code
+# Application layer
+FROM base AS app
+COPY --from=deps /app/node_modules /app/node_modules
 COPY . .
 
-
-# Final stage for app image
+# Runtime image
 FROM base
-
-# Copy built application
-COPY --from=build /app /app
+COPY --from=app /app /app
 
 # Start the server by default, this can be overwritten at runtime
-EXPOSE 3000
+EXPOSE 5050
 CMD [ "npm", "run", "start" ]

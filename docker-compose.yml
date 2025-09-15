@@ -21,6 +21,8 @@ services:
     command: npm run dev
     volumes:
       - .:/app
+      # Preserve container's node_modules so build-time installs aren't shadowed by the bind mount
+      - /app/node_modules
 
   postgres:
     image: postgres:16-alpine
