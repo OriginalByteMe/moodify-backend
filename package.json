@@ -37,8 +37,11 @@
     "jpeg-js": "^0.4.4",
     "knex": "^3.1.0",
     "mongodb": "^6.16.0",
+    "mpg123-decoder": "^1.0.3",
+    "music-tempo": "^1.0.3",
     "pg": "^8.16.0",
-    "png-js": "^1.0.0"
+    "png-js": "^1.0.0",
+    "sharp": "^0.35.0"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^11.5.1",

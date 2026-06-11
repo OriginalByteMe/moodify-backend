@@ -13,9 +13,54 @@
   "tags": [
     { "name": "Health", "description": "Health checks" },
     { "name": "Spotify", "description": "Track and album endpoints" },
-    { "name": "Palette", "description": "Palette generation endpoints" }
+    { "name": "Palette", "description": "Palette generation endpoints" },
+    { "name": "Analysis", "description": "Audio preview analysis and mood derivation" }
   ],
   "paths": {
+    "/analysis/track": {
+      "post": {
+        "tags": ["Analysis"],
+        "summary": "Analyze a preview clip and derive audio features + mood",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["previewUrl"],
+                "properties": {
+                  "previewUrl": { "type": "string", "description": "URL of an MP3 preview clip" },
+                  "spotifyId": { "type": "string", "description": "If provided, persist features and mood to the track" },
+                  "persist": { "type": "boolean", "default": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Computed audio features, signal statistics and derived mood",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AudioAnalysisResponse" }
+              }
+            }
+          },
+          "400": { "description": "previewUrl missing" },
+          "415": { "description": "Audio could not be decoded" },
+          "502": { "description": "Preview clip could not be fetched" }
+        }
+      }
+    },
+    "/analysis/moods": {
+      "get": {
+        "tags": ["Analysis"],
+        "summary": "Mood taxonomy (label -> arousal/valence bucket + description)",
+        "responses": {
+          "200": { "description": "Mood taxonomy object" }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": ["Health"],
@@ -250,6 +295,49 @@
   },
   "components": {
     "schemas": {
+      "AudioAnalysisResponse": {
+        "type": "object",
+        "properties": {
+          "source": { "type": "string", "example": "moodify-preview-analysis" },
+          "analyzedSeconds": { "type": "number" },
+          "sampleRate": { "type": "integer" },
+          "features": {
+            "type": "object",
+            "properties": {
+              "tempo": { "type": "integer", "nullable": true, "description": "BPM" },
+              "energy": { "type": "number" },
+              "loudness": { "type": "number", "description": "dBFS" },
+              "danceability": { "type": "number" },
+              "valence": { "type": "number", "description": "Heuristic estimate" },
+              "acousticness": { "type": "number" }
+            }
+          },
+          "signal": {
+            "type": "object",
+            "properties": {
+              "rmsMean": { "type": "number" },
+              "dynamicRange": { "type": "number" },
+              "spectralCentroidHz": { "type": "integer" },
+              "spectralRolloffHz": { "type": "integer" },
+              "zeroCrossingRate": { "type": "number" },
+              "onsetRate": { "type": "number" },
+              "beatRegularity": { "type": "number" },
+              "brightness": { "type": "number" }
+            }
+          },
+          "mood": {
+            "type": "object",
+            "properties": {
+              "mood": { "type": "string", "example": "groovy" },
+              "secondaryMood": { "type": "string", "nullable": true },
+              "arousal": { "type": "number" },
+              "valence": { "type": "number" },
+              "confidence": { "type": "number" }
+            }
+          },
+          "persisted": { "type": "boolean" }
+        }
+      },
       "HealthResponse": {
         "type": "object",
         "properties": { "message": { "type": "string", "example": "Server is running" } }

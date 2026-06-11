@@ -41,6 +41,9 @@ Located in `server/routes/`:
 - `/palette` - Color palette generation endpoints:
   - `POST /palette/track` - Extract color palette from image URL
   - `POST /palette/album` - Extract color palette from album cover
+- `/analysis` - First-party audio analysis endpoints:
+  - `POST /analysis/track` - Analyze an MP3 preview clip (tempo, energy, loudness, danceability/valence/acousticness estimates, mood); persists to the track when `spotifyId` is provided
+  - `GET /analysis/moods` - Mood taxonomy used by the frontend's mood-driven visuals
 
 ### Service Layer Architecture
 - **Controller Pattern**: Routes delegate to controllers for HTTP handling
@@ -51,9 +54,14 @@ Located in `server/routes/`:
 ### Color Analysis
 The `PixelPeeper` class (`server/helpers/PixelPeeper.js`) implements:
 - Median cut algorithm for color palette extraction
-- Support for JPEG and PNG image processing 
+- Image decoding via `sharp` (JPEG, PNG, WebP, GIF, AVIF, TIFF) with fetch timeout + retry in `paletteService.js`
 - HSL-based vibrancy calculation for representative colors
 - Configurable bucket sizes for palette generation
+
+### Audio Analysis
+- `server/services/audioAnalysisService.js` decodes MP3 preview clips (`mpg123-decoder`) and computes tempo (`music-tempo` with autocorrelation fallback), RMS energy/loudness, spectral centroid/rolloff/flux, onset rate and beat regularity (`server/helpers/dsp.js`)
+- `server/helpers/moodEngine.js` maps features onto an arousal x valence mood taxonomy (9 moods); labels double as frontend visual theme keys
+- Results persist to the `tracks` audio feature columns plus `mood`, `genres` and `audio_analysis` (JSONB)
 
 ### Environment Configuration
 - **Database**: Uses `DATABASE_URL` or individual PostgreSQL environment variables

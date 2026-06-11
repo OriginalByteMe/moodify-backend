@@ -59,7 +59,9 @@ export function createSpotifyService(database, options = {}) {
         'album_name', 'track_name', 'popularity', 'duration_ms', 'explicit',
         'danceability', 'energy', 'key', 'loudness', 'mode', 'speechiness',
         'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo',
-        'time_signature', 'track_genre', 'audio_features_status'
+        'time_signature', 'track_genre', 'audio_features_status',
+        // first-party mood/genre data
+        'mood', 'genres', 'audio_analysis'
       ]);
 
       const updateData = {};
@@ -70,10 +72,16 @@ export function createSpotifyService(database, options = {}) {
       }
 
       // Copy other allowed scalar fields if provided (including audio features)
+      const jsonbFields = new Set(['genres', 'audio_analysis']);
       for (const key of Object.keys(updates)) {
         if (allowedTrackFields.has(key) && key !== 'colourPalette') {
-          const value = updates[key];
-          if (typeof value !== 'undefined') updateData[key] = value;
+          let value = updates[key];
+          if (typeof value === 'undefined') continue;
+          // JS arrays/objects would otherwise be sent as Postgres arrays/records
+          if (jsonbFields.has(key) && value !== null && typeof value === 'object') {
+            value = JSON.stringify(value);
+          }
+          updateData[key] = value;
         }
       }
 

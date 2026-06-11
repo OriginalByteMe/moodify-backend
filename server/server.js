@@ -4,6 +4,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createDatabaseConnection } from "./db/connection.js";
+import analysis from "./routes/analysis.js";
 import health from "./routes/health.js";
 import palette from "./routes/palette.js";
 import spotify from "./routes/spotify.js";
@@ -24,6 +25,7 @@ export function createApp(db) {
 
   app.use("/spotify", spotify);
   app.use("/palette", palette);
+  app.use("/analysis", analysis);
   app.use("/health", health);
 
   // OpenAPI spec and docs
