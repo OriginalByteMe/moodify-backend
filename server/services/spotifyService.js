@@ -262,6 +262,14 @@ export function createSpotifyService(database, options = {}) {
       newTrack.track_name = trackData.title;
     }
 
+    // Mood/genre data (genres is JSONB, so stringify to avoid pg array literals)
+    if (typeof trackData.mood !== 'undefined' && trackData.mood !== null) {
+      newTrack.mood = trackData.mood;
+    }
+    if (Array.isArray(trackData.genres)) {
+      newTrack.genres = JSON.stringify(trackData.genres);
+    }
+
     // If audio features were provided but status not set, mark as 'imported'
     if (anyAudioFeatureProvided && typeof newTrack.audio_features_status === 'undefined') {
       newTrack.audio_features_status = 'imported';
@@ -523,6 +531,13 @@ export function createSpotifyService(database, options = {}) {
 
         if (anyProvided && typeof doc.audio_features_status === 'undefined') {
           doc.audio_features_status = 'imported';
+        }
+
+        if (typeof data.mood !== 'undefined' && data.mood !== null) {
+          doc.mood = data.mood;
+        }
+        if (Array.isArray(data.genres)) {
+          doc.genres = JSON.stringify(data.genres);
         }
 
         return doc;
