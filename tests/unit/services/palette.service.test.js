@@ -1,4 +1,4 @@
-import { generatePalette } from '../../../server/services/paletteService.js';
+import { generatePalette, fetchWithRetry } from '../../../server/services/paletteService.js';
 import { jest } from '@jest/globals';
 
 describe('paletteService.generatePalette', () => {
@@ -16,6 +16,23 @@ describe('paletteService.generatePalette', () => {
     await expect(generatePalette('https://example.com/image.jpg')).rejects.toThrow(
       'Failed to fetch image: 500 Internal Server Error'
     );
+  });
+
+  test('fetchWithRetry recovers from a transient network error', async () => {
+    const okResponse = { ok: true, status: 200 };
+    global.fetch = jest.fn()
+      .mockRejectedValueOnce(new Error('socket hang up'))
+      .mockResolvedValueOnce(okResponse);
+    await expect(fetchWithRetry('https://example.com/image.jpg')).resolves.toBe(okResponse);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  test('fetchWithRetry does not retry non-retryable 4xx responses', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404, statusText: 'Not Found' });
+    await expect(fetchWithRetry('https://example.com/missing.jpg')).rejects.toThrow(
+      'Failed to fetch image: 404 Not Found'
+    );
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
   test('throws on unsupported content type', async () => {
