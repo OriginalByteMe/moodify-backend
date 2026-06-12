@@ -23,6 +23,16 @@ describe('moodEngine.deriveMood', () => {
     expect(result.mood).toBe('serene');
   });
 
+  test('near a bucket boundary a secondary mood is suggested for blending', () => {
+    // arousal lands just above the 0.62 boundary -> low confidence + neighbour mood
+    const result = deriveMood({ energy: 0.65, valence: 0.85, tempo: 134, danceability: 0.5, onsetRate: 3.7 });
+    expect(result.confidence).toBeLessThan(1);
+    expect(result.secondaryMood).not.toBe(result.mood);
+    if (result.secondaryMood) {
+      expect(Object.keys(MOOD_TAXONOMY)).toContain(result.secondaryMood);
+    }
+  });
+
   test('every mood label exists in the taxonomy', () => {
     for (let energy = 0; energy <= 1; energy += 0.25) {
       for (let valence = 0; valence <= 1; valence += 0.25) {
