@@ -1,0 +1,31 @@
+name: Fly Deploy
+
+# Deploys to production after the "Test" workflow succeeds on main.
+# Requires the FLY_API_TOKEN repo secret (a deploy token works:
+#   fly tokens create deploy -a moodify-backend-442duw
+# Note: fly.toml's release_command runs DB migrations on every deploy.
+on:
+  workflow_run:
+    workflows: ["Test"]
+    types: [completed]
+    branches: [main]
+  # Manual deploys from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Fly.io
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    concurrency: fly-deploy-production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
